@@ -9,6 +9,10 @@
             :execution="execution"
             class="gantt-progress"
         />
+        <FailureDebugPanel
+            :execution="execution"
+            :flow="executionsStore.flow"
+        />
         <!-- No task runs to plot: hide the filter bar + card and show only the execution
              status (mirrors the versioned-plugins empty screen). -->
         <KsEmptyState v-if="series.length === 0" :image="emptyIllustration">
@@ -221,6 +225,7 @@
     import emptyIllustration from "../../assets/empty_visuals/generic.svg"
     import {buildTaskRunHierarchy} from "../../utils/taskRunHierarchy"
     import {computeTaskBarPercents} from "../../utils/ganttSeries"
+    import FailureDebugPanel from "./gantt/FailureDebugPanel.vue"
 
     import {storageKeys} from "../../utils/constants"
     type TaskRun = ExecutionTaskRun
