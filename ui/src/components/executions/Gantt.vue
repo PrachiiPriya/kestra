@@ -12,172 +12,179 @@
         <FailureDebugPanel
             :execution="execution"
             :flow="executionsStore.flow"
-        />
-        <!-- No task runs to plot: hide the filter bar + card and show only the execution
-             status (mirrors the versioned-plugins empty screen). -->
-        <KsEmptyState v-if="series.length === 0" :image="emptyIllustration">
-            <template #description>
-                <span class="gantt-empty-status">
-                    {{ $t("execution_status") }}
-                    <KsExecutionStatus :status="execution.state.current" />
-                </span>
-                <span v-if="emptyStateHint" class="gantt-empty-hint">{{ emptyStateHint }}</span>
-            </template>
-        </KsEmptyState>
-        <template v-else>
-            <KSFilter
-                :configuration="ganttExecutionFilter"
-                :tableOptions="{
-                    chart: {shown: false},
-                    columns: {shown: false},
-                    refresh: {shown: true, callback: compute}
-                }"
-                @search="search = $event"
-                @filter="onFilterChange"
-            />
-            <div class="gantt-stage">
-                <KsCard
-                    id="gantt"
-                    data-onboarding-target="execution-gantt"
-                    shadow="never"
-                    :class="{'no-border': !hasValidDate, 'is-compact': verticalLayout}"
-                >
-                    <template #header v-if="hasValidDate">
-                        <div class="gantt-header">
-                            <div class="top">
-                                <div class="summary">
-                                    <span class="item">
-                                        <span class="label">{{ $t("total_duration") }}</span>
-                                        <Duration class="value" :histories="execution.state.histories" />
-                                    </span>
-                                    <span class="separator">/</span>
-                                    <span class="item">
-                                        <span class="label">{{ $t("tasks") }}</span>
-                                        <span class="value">{{ tasksSummary }}</span>
-                                    </span>
+            v-slot="{shouldRender: debugShouldRender, isOpen: debugOpen, reopen: reopenDebugPanel, setReopenRef}"
+        >
+            <!-- No task runs to plot: hide the filter bar + card and show only the execution
+                 status (mirrors the versioned-plugins empty screen). -->
+            <KsEmptyState v-if="series.length === 0" :image="emptyIllustration">
+                <template #description>
+                    <span class="gantt-empty-status">
+                        {{ $t("execution_status") }}
+                        <KsExecutionStatus :status="execution.state.current" />
+                    </span>
+                    <span v-if="emptyStateHint" class="gantt-empty-hint">{{ emptyStateHint }}</span>
+                </template>
+            </KsEmptyState>
+            <template v-else>
+                <KSFilter
+                    :configuration="ganttExecutionFilter"
+                    :tableOptions="{
+                        chart: {shown: false},
+                        columns: {shown: false},
+                        refresh: {shown: true, callback: compute}
+                    }"
+                    @search="search = $event"
+                    @filter="onFilterChange"
+                />
+                <div class="gantt-stage">
+                    <KsCard
+                        id="gantt"
+                        data-onboarding-target="execution-gantt"
+                        shadow="never"
+                        :class="{'no-border': !hasValidDate, 'is-compact': verticalLayout}"
+                    >
+                        <template #header v-if="hasValidDate">
+                            <div class="gantt-header">
+                                <div class="top">
+                                    <div class="summary">
+                                        <span class="item">
+                                            <span class="label">{{ $t("total_duration") }}</span>
+                                            <Duration class="value" :histories="execution.state.histories" />
+                                        </span>
+                                        <span class="separator">/</span>
+                                        <span class="item">
+                                            <span class="label">{{ $t("tasks") }}</span>
+                                            <span class="value">{{ tasksSummary }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="actions">
+                                        <span v-if="debugShouldRender && !debugOpen" :ref="setReopenRef">
+                                            <KsButton :icon="MagnifyScan" @click="reopenDebugPanel">
+                                                {{ $t("failureDebugPanel.reopen") }}
+                                            </KsButton>
+                                        </span>
+                                        <KsButton class="copy-logs" :icon="ContentCopy" link @click="copyAllLogs">
+                                            {{ $t("copy all logs") }}
+                                        </KsButton>
+                                        <KsExecutionStatus :status="execution.state.current" />
+                                    </div>
                                 </div>
-                                <div class="actions">
-                                    <KsButton class="copy-logs" :icon="ContentCopy" link @click="copyAllLogs">
-                                        {{ $t("copy all logs") }}
-                                    </KsButton>
-                                    <KsExecutionStatus :status="execution.state.current" />
+                                <div class="bottom">
+                                    <div class="scale" data-test="gantt-scale">
+                                        <span>{{ formatDuration(0) }}</span>
+                                        <span>{{ formatDuration(delta()) }}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="bottom">
-                                <div class="scale" data-test="gantt-scale">
-                                    <span>{{ formatDuration(0) }}</span>
-                                    <span>{{ formatDuration(delta()) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                    <template #default>
-                        <DynamicScroller
-                            v-if="filteredSeries.length > 0"
-                            :items="filteredSeries"
-                            :minItemSize="40"
-                            keyField="id"
-                            :buffer="0"
-                            :updateInterval="0"
-                        >
-                            <template #default="{item, index, active}">
-                                <DynamicScrollerItem
-                                    :item="item"
-                                    :active="active"
-                                    :data-index="index"
-                                >
-                                    <div class="d-flex flex-column">
-                                        <div
-                                            class="gantt-row d-flex cursor-icon"
-                                            :class="{'is-expanded': selectedTaskRuns.includes(item.id)}"
-                                            @click="onTaskSelect(item.id)"
-                                        >
-                                            <div v-if="!verticalLayout" class="d-inline-flex">
-                                                <ChevronRight v-if="!selectedTaskRuns.includes(item.id)" />
-                                                <ChevronDown v-else />
-                                            </div>
+                        </template>
+                        <template #default>
+                            <DynamicScroller
+                                v-if="filteredSeries.length > 0"
+                                :items="filteredSeries"
+                                :minItemSize="40"
+                                keyField="id"
+                                :buffer="0"
+                                :updateInterval="0"
+                            >
+                                <template #default="{item, index, active}">
+                                    <DynamicScrollerItem
+                                        :item="item"
+                                        :active="active"
+                                        :data-index="index"
+                                    >
+                                        <div class="d-flex flex-column">
                                             <div
-                                                class="task-label"
-                                                data-test="gantt-task-label"
-                                                :style="{'--depth': item.depth || 0}"
+                                                class="gantt-row d-flex cursor-icon"
+                                                :class="{'is-expanded': selectedTaskRuns.includes(item.id)}"
+                                                @click="onTaskSelect(item.id)"
                                             >
-                                                <div v-if="taskTypeByTaskRunId[item.id]" class="task-icon-box">
-                                                    <TaskIcon :cls="taskTypeByTaskRunId[item.id]" onlyIcon :loadIcon="pluginsStore.loadIcon" />
+                                                <div v-if="!verticalLayout" class="d-inline-flex">
+                                                    <ChevronRight v-if="!selectedTaskRuns.includes(item.id)" />
+                                                    <ChevronDown v-else />
                                                 </div>
-                                                <KsTooltip placement="top-start">
-                                                    <template #content>
-                                                        <code>{{ item.name }}</code>
-                                                        <small v-if="item.task?.value"><br>{{ item.task.value }}</small>
-                                                    </template>
-                                                    <span class="task-name">
-                                                        <code :title="verticalLayout ? item.name : undefined">{{ item.name }}</code>
-                                                        <small v-if="item.task?.value"> {{ item.task.value }}</small>
-                                                    </span>
-                                                </KsTooltip>
-                                            </div>
-                                            <div>
-                                                <KsTooltip v-if="item.attempts > 1" placement="right">
-                                                    <template #content>
-                                                        <span>{{ $t("this_task_has") }} {{ item.attempts }} {{ $t("attempts").toLowerCase() }}.</span>
-                                                    </template>
-                                                    <Warning class="attempt_warn me-3" />
-                                                </KsTooltip>
-                                            </div>
-                                            <div v-if="!verticalLayout" class="task-offset" data-test="gantt-task-offset">
-                                                {{ item.offset }}
-                                            </div>
-                                            <div class="task-bar">
                                                 <div
-                                                    :style="taskBarStyle(item)"
-                                                    class="task-progress"
-                                                    data-test="gantt-task-bar"
-                                                />
-                                            </div>
-                                            <div v-if="!verticalLayout" class="task-duration">
-                                                <small>
-                                                    <Duration :histories="item.task.state.histories" :attemptCount="item.attempts" :subject="item.name" />
-                                                </small>
-                                            </div>
-                                            <div class="task-state">
-                                                <KsExecutionStatus :status="item.task.state.current" />
-                                            </div>
-                                            <div class="task-actions" @click.stop>
-                                                <TaskRunActions
-                                                    :taskRun="item.task"
-                                                    :taskType="taskTypeByTaskRunId[item.task.id]"
-                                                    :execution="execution"
-                                                    :flow="executionsStore.flow"
-                                                />
-                                            </div>
-                                        </div>
-                                        <Transition name="expand">
-                                            <div v-if="selectedTaskRuns.includes(item.id)" class="task-details">
-                                                <div class="task-details__inner p-2">
-                                                    <GanttTaskLogs
+                                                    class="task-label"
+                                                    data-test="gantt-task-label"
+                                                    :style="{'--depth': item.depth || 0}"
+                                                >
+                                                    <div v-if="taskTypeByTaskRunId[item.id]" class="task-icon-box">
+                                                        <TaskIcon :cls="taskTypeByTaskRunId[item.id]" onlyIcon :loadIcon="pluginsStore.loadIcon" />
+                                                    </div>
+                                                    <KsTooltip placement="top-start">
+                                                        <template #content>
+                                                            <code>{{ item.name }}</code>
+                                                            <small v-if="item.task?.value"><br>{{ item.task.value }}</small>
+                                                        </template>
+                                                        <span class="task-name">
+                                                            <code :title="verticalLayout ? item.name : undefined">{{ item.name }}</code>
+                                                            <small v-if="item.task?.value"> {{ item.task.value }}</small>
+                                                        </span>
+                                                    </KsTooltip>
+                                                </div>
+                                                <div>
+                                                    <KsTooltip v-if="item.attempts > 1" placement="right">
+                                                        <template #content>
+                                                            <span>{{ $t("this_task_has") }} {{ item.attempts }} {{ $t("attempts").toLowerCase() }}.</span>
+                                                        </template>
+                                                        <Warning class="attempt_warn me-3" />
+                                                    </KsTooltip>
+                                                </div>
+                                                <div v-if="!verticalLayout" class="task-offset" data-test="gantt-task-offset">
+                                                    {{ item.offset }}
+                                                </div>
+                                                <div class="task-bar">
+                                                    <div
+                                                        :style="taskBarStyle(item)"
+                                                        class="task-progress"
+                                                        data-test="gantt-task-bar"
+                                                    />
+                                                </div>
+                                                <div v-if="!verticalLayout" class="task-duration">
+                                                    <small>
+                                                        <Duration :histories="item.task.state.histories" :attemptCount="item.attempts" :subject="item.name" />
+                                                    </small>
+                                                </div>
+                                                <div class="task-state">
+                                                    <KsExecutionStatus :status="item.task.state.current" />
+                                                </div>
+                                                <div class="task-actions" @click.stop>
+                                                    <TaskRunActions
                                                         :taskRun="item.task"
-                                                        :taskType="taskTypeByTaskRunId[item.id]"
+                                                        :taskType="taskTypeByTaskRunId[item.task.id]"
                                                         :execution="execution"
                                                         :flow="executionsStore.flow"
-                                                        :levelFilter="effectiveSelectedLogLevel"
-                                                        class="mh-100 mx-3"
                                                     />
                                                 </div>
                                             </div>
-                                        </Transition>
-                                    </div>
-                                </DynamicScrollerItem>
-                            </template>
-                        </DynamicScroller>
-                        <!-- Task runs exist but the active filters/search hid them all. -->
-                        <KsNoData
-                            v-else
-                            :title="$t('gantt_no_tasks_match_filters_title')"
-                            :description="$t('gantt_no_tasks_match_filters')"
-                        />
-                    </template>
-                </KsCard>
-            </div>
-        </template>
+                                            <Transition name="expand">
+                                                <div v-if="selectedTaskRuns.includes(item.id)" class="task-details">
+                                                    <div class="task-details__inner p-2">
+                                                        <GanttTaskLogs
+                                                            :taskRun="item.task"
+                                                            :taskType="taskTypeByTaskRunId[item.id]"
+                                                            :execution="execution"
+                                                            :flow="executionsStore.flow"
+                                                            :levelFilter="effectiveSelectedLogLevel"
+                                                            class="mh-100 mx-3"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </Transition>
+                                        </div>
+                                    </DynamicScrollerItem>
+                                </template>
+                            </DynamicScroller>
+                            <!-- Task runs exist but the active filters/search hid them all. -->
+                            <KsNoData
+                                v-else
+                                :title="$t('gantt_no_tasks_match_filters_title')"
+                                :description="$t('gantt_no_tasks_match_filters')"
+                            />
+                        </template>
+                    </KsCard>
+                </div>
+            </template>
+        </FailureDebugPanel>
     </template>
 </template>
 
@@ -191,6 +198,7 @@
     import {DynamicScroller, DynamicScrollerItem} from "vue-virtual-scroller"
     import "vue-virtual-scroller/dist/vue-virtual-scroller.css"
     import ContentCopy from "vue-material-design-icons/ContentCopy.vue"
+    import MagnifyScan from "vue-material-design-icons/MagnifyScan.vue"
     import ChevronRight from "vue-material-design-icons/ChevronRight.vue"
     import ChevronDown from "vue-material-design-icons/ChevronDown.vue"
     import Warning from "vue-material-design-icons/Alert.vue"
