@@ -14,6 +14,7 @@ import io.kestra.core.repositories.ExecutionRepositoryInterface;
 import io.kestra.core.repositories.FlowRepositoryInterface;
 import io.kestra.core.runners.DisplayExpressionRenderer;
 import io.kestra.core.runners.RunContextFactory;
+import io.kestra.core.runners.SecureVariableRendererFactory;
 import io.kestra.core.services.FlowParsingService;
 import io.kestra.core.tenant.TenantService;
 
@@ -42,6 +43,7 @@ public class ExpressionController {
     private final FlowParsingService flowParsingService;
     private final RunContextFactory runContextFactory;
     private final DisplayExpressionRenderer displayExpressionRenderer;
+    private final SecureVariableRendererFactory secureVariableRendererFactory;
 
     @Inject
     public ExpressionController(
@@ -50,13 +52,15 @@ public class ExpressionController {
         FlowRepositoryInterface flowRepository,
         FlowParsingService flowParsingService,
         RunContextFactory runContextFactory,
-        DisplayExpressionRenderer displayExpressionRenderer) {
+        DisplayExpressionRenderer displayExpressionRenderer,
+        SecureVariableRendererFactory secureVariableRendererFactory) {
         this.tenantService = tenantService;
         this.executionRepository = executionRepository;
         this.flowRepository = flowRepository;
         this.flowParsingService = flowParsingService;
         this.runContextFactory = runContextFactory;
         this.displayExpressionRenderer = displayExpressionRenderer;
+        this.secureVariableRendererFactory = secureVariableRendererFactory;
     }
 
     @ExecuteOn(TaskExecutors.IO)
@@ -88,7 +92,7 @@ public class ExpressionController {
                     .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "Unable to find task run '" + request.taskRunId() + "' on execution '" + request.executionId() + "'"));
                 Task task = flow.findTaskByTaskIdOrNull(taskRun.getTaskId());
                 if (task != null) {
-                    return runContextFactory.of(flow, task, execution, taskRun, false).getVariables();
+                    return runContextFactory.of(flow, task, execution, taskRun, false, secureVariableRendererFactory.createOrGet()).getVariables();
                 }
             }
 
