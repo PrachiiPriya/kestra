@@ -107,7 +107,7 @@
                 </div>
             </KsCard>
 
-            <KsCard v-if="focusedTaskRun" shadow="never" class="failure-debug-panel__context">
+            <KsCard v-if="focusedTaskRun && hasBeenOpened" shadow="never" class="failure-debug-panel__context">
                 <KsTabs v-model="activeContextTab" type="box">
                     <KsTabPane name="stateHistory" :label="$t('failureDebugPanel.stateHistory.title')">
                         <div class="failure-debug-panel__tab-pane failure-debug-panel__stacked">
@@ -175,7 +175,7 @@
                         <h4>{{ $t("failureDebugPanel.logs.title") }}</h4>
                     </template>
                     <FailureLogPanel
-                        v-if="focusedTaskRun"
+                        v-if="focusedTaskRun && hasBeenOpened"
                         :executionId="execution.id"
                         :executionKind="execution.kind ?? undefined"
                         :taskRunId="focusedTaskRun.id"
@@ -265,6 +265,7 @@
     const miniTimelineRef = ref<InstanceType<typeof FailureMiniTimeline>>()
 
     const isOpen = ref(false)
+    const hasBeenOpened = ref(false)
     const hasAnnounced = ref(false)
     const announcement = ref("")
     const timeRange = ref<TimeRange | undefined>(undefined)
@@ -354,8 +355,9 @@
     const focusedFlowError = ref(false)
 
     watch(
-        () => `${props.execution.namespace}/${props.execution.flowId}/${props.execution.flowRevision}`,
-        async () => {
+        [() => `${props.execution.namespace}/${props.execution.flowId}/${props.execution.flowRevision}`, hasBeenOpened],
+        async ([, opened]) => {
+            if (!opened) return
             focusedFlowLoading.value = true
             focusedFlowError.value = false
             focusedFlow.value = undefined
@@ -461,6 +463,7 @@
 
     function reopen() {
         isOpen.value = true
+        hasBeenOpened.value = true
     }
 
     function onKeydown(event: KeyboardEvent) {

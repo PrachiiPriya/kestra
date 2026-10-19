@@ -145,6 +145,7 @@ describe("FailureDebugPanel", () => {
                 taskRun("tr-2", "task-2", "FAILED", "2024-01-01T00:00:10Z"),
             ],
         })
+        await wrapper.get(".failure-debug-reopen button").trigger("click")
         await flushPromises()
 
         expect(mocks.flow).toHaveBeenCalledTimes(1)
@@ -398,6 +399,25 @@ describe("FailureDebugPanel", () => {
         await flushPromises()
 
         expect(loadLogs).not.toHaveBeenCalled()
+    })
+
+    it("should not load the flow, the logs or the task context until the panel is first opened", async () => {
+        const wrapper = mountPanel({
+            id: "exec-1",
+            state: {current: "FAILED"},
+            taskRunList: [taskRun("tr-1", "load_warehouse", "FAILED", "2024-01-01T00:00:00Z")],
+        })
+        await flushPromises()
+
+        expect(mocks.flow).not.toHaveBeenCalled()
+        expect(wrapper.findComponent({name: "FailureLogPanel"}).exists()).toBe(false)
+        expect(wrapper.findComponent({name: "FailureResolvedConfig"}).exists()).toBe(false)
+
+        await wrapper.get(".failure-debug-reopen button").trigger("click")
+        await flushPromises()
+
+        expect(mocks.flow).toHaveBeenCalledOnce()
+        expect(wrapper.findComponent({name: "FailureLogPanel"}).exists()).toBe(true)
     })
 
     it("should not refetch the error when the same failure is closed and reopened", async () => {
