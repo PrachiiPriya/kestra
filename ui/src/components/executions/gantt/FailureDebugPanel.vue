@@ -5,6 +5,7 @@
             v-show="isOpen"
             role="region"
             :aria-labelledby="headingId"
+            tabindex="-1"
             class="failure-debug-panel"
             @keydown="onKeydown"
         >

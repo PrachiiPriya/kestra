@@ -227,6 +227,26 @@ describe("FailureDebugPanel", () => {
         expect(document.activeElement).toBe(wrapper.get(".failure-debug-reopen button").element)
     })
 
+    it("should keep Escape working after a press on non-focusable panel content moved focus off the heading", async () => {
+        const wrapper = mountPanel({
+            id: "exec-1",
+            state: {current: "FAILED"},
+            taskRunList: [taskRun("tr-1", "task-1", "FAILED", "2024-01-01T00:00:00Z")],
+        })
+        await flushPromises()
+        await wrapper.get(".failure-debug-reopen button").trigger("click")
+        await flushPromises()
+
+        const region = wrapper.get(".failure-debug-panel").element as HTMLElement
+        const heading = document.activeElement as HTMLElement
+        heading.blur()
+        region.focus()
+        document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}))
+        await flushPromises()
+
+        expect(wrapper.get(".failure-debug-panel").isVisible()).toBe(false)
+    })
+
     it("should reopen and move focus back to the heading", async () => {
         const wrapper = mountPanel({
             id: "exec-1",
