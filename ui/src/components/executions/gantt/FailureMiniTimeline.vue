@@ -7,9 +7,10 @@
         <div
             ref="trackRef"
             class="mini-timeline__track"
-            @pointerdown="onTrackPointerDown"
-            @pointermove="onPointerMove"
+            @pointerdown="onPointerDown"
+            @pointermove="onTrackPointerMove"
             @pointerup="onTrackPointerUp"
+            @pointerleave="onTrackPointerLeave"
             @pointercancel="cancelDrag"
             @lostpointercapture="cancelDrag"
         >
@@ -101,6 +102,8 @@
 
     const {
         selection,
+        isDragging,
+        exceedsDragThreshold,
         dragBandPx,
         onPointerDown,
         onPointerMove,
@@ -109,9 +112,18 @@
         clear,
     } = useTimeRangeSelection(timeAt)
 
-    function onTrackPointerDown(event: PointerEvent) {
-        onPointerDown(event)
-        trackRef.value?.setPointerCapture(event.pointerId)
+    function onTrackPointerMove(event: PointerEvent) {
+        onPointerMove(event)
+        const track = trackRef.value
+        if (track && exceedsDragThreshold.value && !track.hasPointerCapture(event.pointerId)) {
+            track.setPointerCapture(event.pointerId)
+        }
+    }
+
+    function onTrackPointerLeave(event: PointerEvent) {
+        if (isDragging.value && !trackRef.value?.hasPointerCapture(event.pointerId)) {
+            cancelDrag()
+        }
     }
 
     let lastGestureWasDrag = false
@@ -132,10 +144,9 @@
     }
 
     const bandStyle = computed(() => {
-        const rect = trackRef.value?.getBoundingClientRect()
-        if (!rect || rect.width === 0) return undefined
-
         if (dragBandPx.value) {
+            const rect = trackRef.value?.getBoundingClientRect()
+            if (!rect || rect.width === 0) return undefined
             const left = ((dragBandPx.value.from - rect.left) / rect.width) * 100
             const width = ((dragBandPx.value.to - dragBandPx.value.from) / rect.width) * 100
             return {left: `${Math.max(0, left)}%`, width: `${Math.max(0, width)}%`}

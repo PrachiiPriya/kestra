@@ -13,6 +13,11 @@ export function useTimeRangeSelection(timeAt: (clientX: number) => number) {
     const selection = ref<TimeRange | undefined>(undefined)
 
     const isDragging = computed(() => dragStartX.value !== undefined)
+    const exceedsDragThreshold = computed(() =>
+        dragStartX.value !== undefined
+        && dragCurrentX.value !== undefined
+        && Math.abs(dragCurrentX.value - dragStartX.value) >= DRAG_THRESHOLD_PX,
+    )
     const hasSelection = computed(() => selection.value !== undefined)
 
     const dragBandPx = computed(() => {
@@ -68,6 +73,7 @@ export function useTimeRangeSelection(timeAt: (clientX: number) => number) {
         selection,
         hasSelection,
         isDragging,
+        exceedsDragThreshold,
         dragBandPx,
         onPointerDown,
         onPointerMove,
