@@ -371,6 +371,25 @@ describe("FailureDebugPanel", () => {
         expect(wrapper.get(".failure-error-summary__text").text()).toBe("Connection refused: warehouse:5432")
     })
 
+    it("should show a subflow error's execution link markup as the plain execution id", async () => {
+        store.executions = {
+            loadLogs: vi.fn().mockResolvedValue([
+                {level: "ERROR", message: "Subflow execution [[link execution=\"child-1\" flowId=\"ledger\" namespace=\"company.team\"]] ends in FAILED state"},
+            ]),
+        }
+
+        const wrapper = mountPanel({
+            id: "exec-1",
+            state: {current: "FAILED"},
+            taskRunList: [taskRun("tr-1", "ledger", "FAILED", "2024-01-01T00:00:00Z")],
+        })
+
+        await wrapper.get(".failure-debug-reopen button").trigger("click")
+        await flushPromises()
+
+        expect(wrapper.get(".failure-error-summary__text").text()).toBe("Subflow execution child-1 ends in FAILED state")
+    })
+
     it("should scope the error fetch to the focused task run instead of loading the whole execution's logs", async () => {
         const wrapper = mountPanel({
             id: "exec-1",

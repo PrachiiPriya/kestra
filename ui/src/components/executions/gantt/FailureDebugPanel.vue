@@ -228,6 +228,7 @@
     import action from "../../../models/action"
     import * as Utils from "../../../utils/utils"
     import {loadTaskRunOutputs} from "../../../composables/useTaskRunOutputs"
+    import {linkTagsAsText} from "../../logs/linkify"
     import {useToast} from "../../../utils/toast"
     import {handled} from "../../../utils/kestraHttp"
     import {useExecutionsStore, type Execution} from "../../../stores/executions"
@@ -493,9 +494,9 @@
 
         const results = ((response as {results?: unknown[]})?.results ?? response ?? []) as Array<{level?: string; message?: string}>
         const errors = results.filter((log) => (log.level ?? "").toString().toUpperCase() === "ERROR" && (log.message ?? "").length > 0)
-        if (errors.length > 0) return errors.map((log) => log.message).join("\n")
+        if (errors.length > 0) return errors.map((log) => linkTagsAsText(log.message ?? "")).join("\n")
 
-        return [...results].reverse().find((log) => (log.message ?? "").length > 0)?.message ?? ""
+        return linkTagsAsText([...results].reverse().find((log) => (log.message ?? "").length > 0)?.message ?? "")
     }
 
     const focusedErrorText = ref("")
