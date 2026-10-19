@@ -171,6 +171,22 @@ describe("FailureDebugPanel", () => {
         expect(nodes.map((node) => node.taskRun.taskId)).toEqual(["extract_orders", "transform_orders", "load_warehouse"])
     })
 
+    it("should skip task runs with no state history instead of breaking the Gantt view it wraps", () => {
+        const wrapper = mountPanel({
+            id: "exec-1",
+            state: {current: "FAILED"},
+            taskRunList: [
+                taskRun("tr-1", "extract_orders", "SUCCESS", "2024-01-01T00:00:00Z"),
+                {id: "tr-2", taskId: "never_started", state: {current: "FAILED", histories: []}},
+                taskRun("tr-3", "load_warehouse", "FAILED", "2024-01-01T00:00:10Z"),
+            ],
+        })
+
+        const nodes = wrapper.findComponent(FailureMiniTimeline).props("nodes") as Array<{taskRun: {taskId: string}}>
+        expect(nodes.map((node) => node.taskRun.taskId)).toEqual(["extract_orders", "load_warehouse"])
+        expect(wrapper.find(".failure-debug-reopen").exists()).toBe(true)
+    })
+
     it("should not render a failure switcher for a single failure", () => {
         const wrapper = mountPanel({
             id: "exec-1",

@@ -244,7 +244,9 @@
         flow?: unknown
     }>()
 
-    const taskRunList = computed(() => (props.execution.taskRunList ?? []) as FailureTaskRun[])
+    const taskRunList = computed(() =>
+        ((props.execution.taskRunList ?? []) as FailureTaskRun[]).filter((taskRun) => (taskRun.state?.histories?.length ?? 0) > 0),
+    )
 
     const {t} = useI18n()
     const route = useRoute()
