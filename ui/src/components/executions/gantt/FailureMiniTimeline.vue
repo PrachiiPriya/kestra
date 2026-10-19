@@ -240,6 +240,7 @@
         position: absolute;
         top: 0;
         bottom: 0;
+        z-index: 2;
         min-width: 3px;
         border: none;
         border-radius: var(--ks-radius-xs);
