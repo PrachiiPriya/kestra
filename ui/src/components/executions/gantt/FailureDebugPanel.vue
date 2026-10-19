@@ -190,7 +190,6 @@
         </div>
 
         <div class="debug-underlay" :class="{'is-dimmed': shouldRender && isOpen}">
-            <!-- The reopen trigger is placed by the caller (next to "Copy All Logs" in Gantt.vue) -->
             <slot
                 :shouldRender="shouldRender"
                 :isOpen="isOpen"

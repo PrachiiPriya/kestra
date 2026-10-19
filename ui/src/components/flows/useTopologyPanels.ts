@@ -54,12 +54,10 @@ export function resolveEditTaskTarget(
     const {path, refPath, fieldName, blockSchemaPath} = resolved
 
     if (fieldName === undefined) {
-        // editing a task directly in an array: we need the parent path and the refPath
-        const parentPath = path.slice(0, - (refPath.toString().length + 2)) // remove the [refPath] part
-        return {parentPath, blockSchemaPath, refPath}
+        const indexSuffixLength = `[${refPath}]`.length
+        return {parentPath: path.slice(0, -indexSuffixLength), blockSchemaPath, refPath}
     }
 
-    // editing a task as a subfield (like a dag): the path is self-sufficient
     return {parentPath: path, blockSchemaPath, refPath: undefined}
 }
 
