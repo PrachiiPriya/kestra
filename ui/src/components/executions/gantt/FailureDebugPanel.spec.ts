@@ -2,6 +2,7 @@ import {afterAll, beforeEach, describe, expect, it, vi} from "vitest"
 import {flushPromises, mount} from "@vue/test-utils"
 import {createI18n} from "vue-i18n"
 import type {Execution} from "../../../stores/executions"
+import {routeQueryToQueryFilters} from "../../../utils/queryFilters"
 
 const store = vi.hoisted(() => ({
     executions: {} as Record<string, unknown>,
@@ -331,6 +332,22 @@ describe("FailureDebugPanel", () => {
         await flushPromises()
 
         expect(wrapper.get(".failure-error-summary__text").text()).toBe("Connection refused: warehouse:5432")
+    })
+
+    it("should scope the error fetch to the focused task run instead of loading the whole execution's logs", async () => {
+        const wrapper = mountPanel({
+            id: "exec-1",
+            state: {current: "FAILED"},
+            taskRunList: [taskRun("tr-1", "load_warehouse", "FAILED", "2024-01-01T00:00:00Z")],
+        })
+
+        await wrapper.get(".failure-debug-reopen button").trigger("click")
+        await flushPromises()
+
+        const loadLogs = store.executions.loadLogs as ReturnType<typeof vi.fn>
+        const filters = routeQueryToQueryFilters(loadLogs.mock.calls[0][0].params)
+        expect(filters).toContainEqual({field: "taskRunId", operation: "EQUALS", value: "tr-1"})
+        expect(filters).toContainEqual({field: "level", operation: "GREATER_THAN_OR_EQUAL_TO", value: "ERROR"})
     })
 
     it("should not fetch the error while the panel is closed, so a failed execution's Gantt view costs nothing extra", async () => {

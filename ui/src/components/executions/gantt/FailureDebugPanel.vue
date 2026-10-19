@@ -479,7 +479,7 @@
             .loadLogs({
                 store: false,
                 executionId: props.execution.id,
-                params: {taskRunId, minLevel: "ERROR"},
+                params: {"filters[taskRunId][EQUALS]": taskRunId, "filters[level][GREATER_THAN_OR_EQUAL_TO]": "ERROR"},
             })
             .catch((e: unknown) => {
                 handled(e)

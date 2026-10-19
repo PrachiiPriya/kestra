@@ -47,7 +47,7 @@
         loading.value = true
         error.value = false
         try {
-            const params: Record<string, unknown> = {taskRunId: props.taskRunId}
+            const params: Record<string, unknown> = {"filters[taskRunId][EQUALS]": props.taskRunId}
             if (props.executionKind && props.executionKind !== "NORMAL") {
                 params["filters[kind][IN]"] = props.executionKind
             }
