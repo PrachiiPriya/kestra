@@ -384,6 +384,12 @@ npm run check:types && npm run test:lint
 
 ## Development Workflow
 
+### Cursor Cloud specific instructions
+
+Cloud Agent environments use `.cursor/cloud-agent-install.sh` and `.cursor/cloud-agent-start.sh`. The base snapshot provides Temurin JDK 25 under `/usr/java/jdk-25` and Node.js 24 on `/usr/bin`; install writes `cli/src/main/resources/application-override.yml` (CORS for the Vite dev server), runs `npm ci` in `ui/`, and compiles `:cli:classes`. Start brings up `./gradlew runLocal` and `npm run dev` in `ui/` when they are not already listening on ports 8080 and 5173.
+
+For JDBC-backed tests, start Docker and run `docker compose -f docker-compose-ci.yml up -d` before `./gradlew` integration tests.
+
 ### Running Locally
 
 1. **Start/stop backends:**
